@@ -1,0 +1,56 @@
+version: "3.8"
+
+services:
+  backend:
+    image: franklioxygen/mytube:backend-latest
+    container_name: mytube-backend
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - "5551:5551"
+    networks:
+      - mytube-network
+    environment:
+      - PORT=5551
+      # 可选：如果需要，在容器内设置自定义上传目录
+      # - VIDEO_DIR=/app/uploads/videos
+    volumes:
+      - ./uploads:/app/uploads
+      - ./data:/app/data
+    # 对于 bridge 网络无法访问互联网的 OpenWrt/iStoreOS 系统，
+    # 请取消注释以下行以使用主机网络模式：
+    # network_mode: host
+    # 然后为前端服务设置 NGINX_BACKEND_URL=http://localhost:5551
+
+  frontend:
+    image: franklioxygen/mytube:frontend-latest
+    container_name: mytube-frontend
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - "5556:5556"
+    depends_on:
+      - backend
+    networks:
+      - mytube-network
+    environment:
+      # 内部 Docker 网络 URL（浏览器 -> 前端 -> 后端）
+      # 在大多数设置中，这些默认值都可以正常工作。
+      - VITE_API_URL=/api
+      - VITE_BACKEND_URL=
+      # 对于主机网络模式（当后端使用 network_mode: host 时），设置：
+      # - NGINX_BACKEND_URL=http://localhost:5551
+    # 如果后端使用主机网络模式，取消注释以下行：
+    # network_mode: host
+    # 并删除上面的 ports 映射
+
+networks:
+  mytube-network:
+    driver: bridge
+    # DNS 配置以帮助解决 OpenWrt/iStoreOS 上的网络连接问题
+    # 如果您仍然遇到容器无法访问互联网的问题，请尝试：
+    # 1. 添加路由器的 DNS 服务器：dns: [8.8.8.8, 8.8.4.4]
+    # 2. 或者为后端使用主机网络模式（见上文注释）
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.enable_icc: "true"

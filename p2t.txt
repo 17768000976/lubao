@@ -1,0 +1,9 @@
+docker run -d \
+  --name p2t \
+  --restart=unless-stopped \
+  -p 10199:10199 \
+  -v p2t_data:/data \
+  -e P2T_DB_PATH=/data/p2t.db \
+  -e GEOIP_DB_PATH=/data/GeoLite2-City.mmdb \
+  -e ADMIN_TOKEN=your_admin_token_here \
+  lmentory/p2t:test
